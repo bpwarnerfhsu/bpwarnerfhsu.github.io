@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Connect 4</title>
+  <meta charset="utf-8">
+  <style>
+  body {
+    margin: 0em;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    background-color: #111111;
+  }
+  h1 {
+    font-family: Lucida Console;
+    text-align: center;
+    color: #DDDDDD;
+    margin: 1em;
+  }
+  h2 {
+    font-family: Tahoma;
+    margin-left: 0.75em;
+    margin-right: 0.5em;
+    font-size: 1em;
+    color: #DDDDDD;
+  }
+  button {
+    font-family: Tahoma;
+    display: flex;
+    justify-content: center;
+    margin-left: 0.125em;
+    padding: 0em 0.5em;
+    border-style: none;
+    background-color: #777777;
+    color: #DDDDDD;
+    font-size: 1em;
+    height: 1.5em;
+  }
+  button:hover {
+    background-color: #DDDDDD;
+    color: #777777;
+  }
+  footer {
+    font-family: Georgia;
+    color: #DDDDDD;
+    margin-bottom: 2em;
+  }
+  .input-grouping {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    background-color: #444444;
+    margin: 0.25em;
+    height: 2em;
+    border-style: none;
+    border-radius: 1em;
+  }
+  .grouping-description {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 1.5em;
+    margin-left: 0.25em;
+  }
+  .button-right {
+    margin-right: 0.25em;
+    border-top-right-radius: 0.75em;
+    border-bottom-right-radius: 0.75em;
+    padding-right: 0.75em;
+  }
+  .board-column {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  .space {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0.25em;
+    width: 4.5em;
+    height: 4.5em;
+    border-radius: 2.25em;
+    background-color: #DDDDDD;
+  }
+  .drop-space {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0.75em;
+    width: 3.5em;
+    height: 3.5em;
+    border-radius: 1.75em;
+  }
+  .token-player1 {
+    display: flex;
+    margin: 0.5em;
+    width: 3.5em;
+    height: 3.5em;
+    background-color: #0088DD;
+    border-radius: 1.75em;
+  }
+  .token-player2 {
+    display: flex;
+    margin: 0.5em;
+    width: 3.5em;
+    height: 3.5em;
+    background-color: #00DD88;
+    border-radius: 1.75em;
+  }
+  .token-empty {
+    display: flex;
+  }
+  #rules {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 250;
+    color: #DDDDDD;
+  }
+  #board {
+    display: flex;
+    flex-direction: row;
+    margin: 1em;
+  }
+  #container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: #222222;
+  }
+  #game {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    margin: 2em;
+    margin-top: 0em;
+    border-style: none;
+    border-radius: 0.5em;
+    background-color: #111111;
+  }
+  #input-bar {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-content: stretch;
+    margin: 0.5em;
+  }
+  #col0 {}
+  #col1 {}
+  #col2 {}
+  #col3 {}
+  #col4 {}
+  #col5 {}
+  #col6 {}
+  </style>
+  <script>
+    let player1Turn = true;
+    let gameInProgress = false;
+    let board;
+
+    function isWin(column, row) {
+      let bounds = { "colMin": Math.max(0, column - 3), "colMax": Math.min(6, column + 3), "rowMin": Math.max(0, row - 3), "rowMax": Math.min(5, row + 3) };
+      let player, distance;
+      if (player1Turn == true) {
+        player = "token-player1";
+      }
+      else {
+        player = "token-player2";
+      }
+
+      // Check horizontal win
+      distance = 0;
+      for (let i = bounds.colMin; i <= bounds.colMax; i++) {
+        if (board[i][row] == player) {
+          distance++;
+          if (distance == 4) {
+            return true;
+          }
+        }
+      }
+      // Check vertical win
+      distance = 0;
+      for (let i = bounds.rowMin; i <= bounds.rowMax; i++) {
+        if (board[column][i] == player) {
+          distance++;
+          if (distance == 4) {
+            return true;
+          }
+        }
+      }
+      // Check diagonal win
+      distance = 0;
+      rowOffset = row - column;
+      // Update the bounds of the check to the orientation
+      bounds.colMin = column;
+      bounds.colMax = column;
+      bounds.rowMin = row;
+      bounds.rowMax = row;
+      for (let i = 1; i < 4; i++) {
+        if (bounds.colMin > 0 && bounds.rowMin > 0) {
+          bounds.colMin--;
+          bounds.rowMin--;
+        }
+        if (bounds.colMax < 6 && bounds.rowMax < 5) {
+          bounds.colMax++;
+          bounds.rowMax++;
+        }
+      }
+      for (let i = bounds.colMin; i <= bounds.colMax; i++) {
+        if (board[i][i + rowOffset] == player) {
+          distance++;
+          if (distance == 4) {
+              return true;
+          }
+        }
+      }
+      // Check for forward-down diagonal winRoutes
+      distance = 0;
+      bounds.colMin = column;
+      bounds.colMax = column;
+      bounds.rowMin = row;
+      bounds.rowMax = row;
+
+      for (let i = 1; i < 4; i++) {
+        if (bounds.colMin > 0 && bounds.rowMax < 5) {
+          bounds.colMin--;
+          bounds.rowMax++;
+        }
+        if (bounds.colMax < 6 && bounds.rowMin > 0) {
+          bounds.colMax++;
+          bounds.rowMin--;
+        }
+      }
+      for (let i = bounds.colMin; i <= bounds.colMax; i++) {
+        if (board[i][bounds.rowMax - i] == player) {
+          distance++;
+          if (distance == 4) {
+              return true;
+          }
+        }
+      }
+
+      return false;
+    }
+
+    function placeToken(column) {
+      if (gameInProgress) {
+        htmlColumn = document.getElementsByClassName("board-column")[column];
+        for (let i = 13; i >= 3; i -= 2) {
+          if (htmlColumn.childNodes[i].childNodes[1].className == "token-empty") {
+            if (player1Turn) {
+              board[column][6 - (i - 1) / 2] = "token-player1";
+              htmlColumn.childNodes[i].childNodes[1].className = "token-player1";
+              if (isWin(column, 6 - (i - 1) / 2)) {
+                removeHoverToken(column);
+                gameInProgress = false;
+                alert("Blue wins!");
+              }
+              player1Turn = false;
+              placeHoverToken(column);
+              break;
+            }
+            else {
+              board[column][6 - (i - 1) / 2] = "token-player2";
+              htmlColumn.childNodes[i].childNodes[1].className = "token-player2";
+              if (isWin(column, 6 - (i - 1) / 2)) {
+                removeHoverToken(column);
+                gameInProgress = false;
+                alert("Green wins!");
+              }
+              player1Turn = true;
+              placeHoverToken(column);
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    function placeHoverToken(column) {
+      if (gameInProgress) {
+        dropSpace = document.getElementsByClassName("drop-space")[column];
+        if (player1Turn) {
+          dropSpace.style.backgroundColor = "#0088DD";
+        }
+        else {
+          dropSpace.style.backgroundColor = "#00DD88";
+        }
+      }
+    }
+
+    function removeHoverToken(column) {
+      if (gameInProgress) {
+        dropSpace = document.getElementsByClassName("drop-space")[column];
+        dropSpace.style.backgroundColor = "transparent";
+      }
+    }
+
+    function col0() {
+      placeToken(0);
+    }
+
+    function col0Hover() {
+      placeHoverToken(0);
+    }
+
+    function col0Out() {
+      removeHoverToken(0);
+    }
+
+    function col1() {
+      placeToken(1);
+    }
+
+    function col1Hover() {
+      placeHoverToken(1);
+    }
+
+    function col1Out() {
+      removeHoverToken(1);
+    }
+
+    function col2() {
+      placeToken(2);
+    }
+
+    function col2Hover() {
+      placeHoverToken(2);
+    }
+
+    function col2Out() {
+      removeHoverToken(2);
+    }
+
+    function col3() {
+      placeToken(3);
+    }
+
+    function col3Hover() {
+      placeHoverToken(3);
+    }
+
+    function col3Out() {
+      removeHoverToken(3);
+    }
+
+    function col4() {
+      placeToken(4);
+    }
+
+    function col4Hover() {
+      placeHoverToken(4);
+    }
+
+    function col4Out() {
+      removeHoverToken(4);
+    }
+
+    function col5() {
+      placeToken(5);
+    }
+
+    function col5Hover() {
+      placeHoverToken(5);
+    }
+
+    function col5Out() {
+      removeHoverToken(5);
+    }
+
+    function col6() {
+      placeToken(6);
+    }
+
+    function col6Hover() {
+      placeHoverToken(6);
+    }
+
+    function col6Out() {
+      removeHoverToken(6);
+    }
+
+    function gameClick() {
+      if (document.getElementsByTagName("button")[0].innerText == "Begin") {
+        document.getElementsByTagName("button")[0].innerText = "End";
+        gameInProgress = true;
+      }
+      else {
+        resetBoard();
+        document.getElementsByTagName("button")[0].innerText = "Begin";
+        gameInProgress = false;
+      }
+    }
+
+    function initializeBoard() {
+      board = new Array();
+      for (let i = 0; i < 7; i++) {
+        board.push(new Array());
+        for (let j = 0; j < 6; j++) {
+          board[i].push("token-empty");
+        }
+      }
+    }
+
+    function resetBoard() {
+      for (let i = 0; i < board.length; i++) {
+        for (let j = 0; j < board[i].length; j++) {
+          board[i][j] = "token-empty";
+        }
+      }
+
+      let tokensPlayer1 = document.getElementsByClassName("token-player1");
+      console.log(tokensPlayer1.length)
+      while (tokensPlayer1.length > 0) {
+        tokensPlayer1[0].className = "token-empty";
+      }
+      console.log(tokensPlayer1.length);
+
+      let tokensPlayer2 = document.getElementsByClassName("token-player2");
+      while (tokensPlayer2.length > 0) {
+        tokensPlayer2[0].className = "token-empty";
+      }
+    }
+
+    function init() {
+      document.getElementsByTagName("button")[0].onclick = gameClick;
+
+      let board = initializeBoard();
+
+      let columns = document.getElementsByClassName("board-column");
+      columns[0].onclick = col0;
+      columns[0].onmouseover = col0Hover;
+      columns[0].onmouseleave = col0Out;
+      columns[1].onclick = col1;
+      columns[1].onmouseover = col1Hover;
+      columns[1].onmouseleave = col1Out;
+      columns[2].onclick = col2;
+      columns[2].onmouseover = col2Hover;
+      columns[2].onmouseleave = col2Out;
+      columns[3].onclick = col3;
+      columns[3].onmouseover = col3Hover;
+      columns[3].onmouseleave = col3Out;
+      columns[4].onclick = col4;
+      columns[4].onmouseover = col4Hover;
+      columns[4].onmouseleave = col4Out;
+      columns[5].onclick = col5;
+      columns[5].onmouseover = col5Hover;
+      columns[5].onmouseleave = col5Out;
+      columns[6].onclick = col6;
+      columns[6].onmouseover = col6Hover;
+      columns[6].onmouseleave = col6Out;
+    }
+
+  </script>
+</head>
+
+<body onload="init()">
+  <div id="container">
+    <header>
+      <h1>Connect 4</h1>
+    </header>
+
+    <div id="game">
+      <div id="input-bar">
+        <div class="input-grouping">
+          <div class="grouping-description">
+            <h2>Game</h2>
+          </div>
+          <button class="button-right" type="button">Begin</button>
+        </div>
+      </div>
+      <div id="board">
+        <div id="col0" class="board-column">
+          <div class="drop-space"></div>
+          <div class="space">
+            <span class="token-empty"></span>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+        </div>
+        <div id="col1" class="board-column">
+          <div class="drop-space"></div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+        </div>
+        <div id="col2" class="board-column">
+          <div class="drop-space"></div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+        </div>
+        <div id="col3" class="board-column">
+          <div class="drop-space"></div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+        </div>
+        <div id="col4" class="board-column">
+          <div class="drop-space"></div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+        </div>
+        <div id="col5" class="board-column">
+          <div class="drop-space"></div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+        </div>
+        <div id="col6" class="board-column">
+          <div class="drop-space"></div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+          <div class="space">
+            <div class="token-empty"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      Brian Warner 2019
+    </footer>
+  </div>
+</body>
